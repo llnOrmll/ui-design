@@ -86,5 +86,21 @@
     "permission_mode": "default",
     "hook_event_name": "SubagentStop",
     "stop_hook_active": false
+  },
+  {
+    "session_id": "cc735b0c-61bf-4f06-b2ce-8fb5aba1db7a",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/cc735b0c-61bf-4f06-b2ce-8fb5aba1db7a.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "cc735b0c-61bf-4f06-b2ce-8fb5aba1db7a",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/cc735b0c-61bf-4f06-b2ce-8fb5aba1db7a.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false
   }
 ]

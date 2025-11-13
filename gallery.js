@@ -6,8 +6,8 @@ import * as THREE from 'three';
 const DEFAULT_CONFIG = {
     // Responsive column breakpoints
     columns: {
-        mobile: 1,        // < 480px
-        small: 2,         // 480px - 768px
+        mobile: 3,        // < 480px (maintain multi-column view)
+        small: 3,         // 480px - 768px
         medium: 3,        // 768px - 968px
         large: 4,         // 968px - 1200px
         xlarge: 5,        // 1200px - 1600px
