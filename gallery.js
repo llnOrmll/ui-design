@@ -155,9 +155,12 @@ class CanvasGallery {
         this.needsRender = true;
         this.animationId = null;
 
-        // Texture management
+        // Texture management with quality settings
         this.textureLoader = new THREE.TextureLoader();
         this.loadingSpinners = [];
+
+        // Store max anisotropy for later use (will be set after renderer init)
+        this.maxAnisotropy = 1;
 
         // Loading progress tracking
         this.totalImagesToLoad = 0;
@@ -293,7 +296,22 @@ class CanvasGallery {
             this.renderer.toneMappingExposure = 1.3;  // Increased for brighter images
         }
 
+        // Set output color space to sRGB for proper gamma correction
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+
         this.updateRendererSize();
+
+        // Get maximum anisotropic filtering level for high-quality textures
+        this.maxAnisotropy = this.renderer.capabilities.getMaxAnisotropy();
+
+        // Log quality enhancements
+        console.log('🎨 Quality Enhancements Active:');
+        console.log(`   • Anisotropic Filtering: ${this.maxAnisotropy}x (sharper images at angles)`);
+        console.log(`   • Trilinear Filtering: Enabled (smooth mipmap transitions)`);
+        console.log(`   • sRGB Color Space: Enabled (gamma-correct colors)`);
+        console.log(`   • Tone Mapping: ACES Filmic (cinematic color reproduction)`);
+        console.log(`   • Pixel Ratio: ${Math.min(window.devicePixelRatio, 2).toFixed(1)}x (capped for performance)`);
+        console.log(`   • Anti-aliasing: ${this.config.renderer.antialias ? 'Enabled (MSAA)' : 'Disabled'}`);
 
         // Setup advanced lighting
         this.setupLighting();
@@ -347,7 +365,8 @@ class CanvasGallery {
      * Update renderer size with proper device pixel ratio handling
      */
     updateRendererSize() {
-        const dpr = this.config.renderer.maxPixelRatio;
+        // Cap device pixel ratio at 2 for optimal quality/performance balance
+        const dpr = Math.min(this.config.renderer.maxPixelRatio, 2);
 
         // Get integer pixel dimensions for pixel-perfect rendering
         const width = Math.floor(window.innerWidth);
@@ -609,10 +628,27 @@ class CanvasGallery {
             return;
         }
 
-        // Load new texture
+        // Load new texture with high-quality settings
         this.textureLoader.load(
             url,
             (texture) => {
+                // Apply quality settings for crisp, high-quality rendering
+
+                // 1. Enable anisotropic filtering for sharpness at angles
+                texture.anisotropy = this.maxAnisotropy;
+
+                // 2. Use sRGB color space for gamma-correct rendering
+                texture.colorSpace = THREE.SRGBColorSpace;
+
+                // 3. Enable mipmaps and use trilinear filtering for best quality
+                texture.generateMipmaps = true;
+                texture.minFilter = THREE.LinearMipmapLinearFilter; // Trilinear filtering
+                texture.magFilter = THREE.LinearFilter; // Linear magnification
+
+                // 4. Set wrapping mode
+                texture.wrapS = THREE.ClampToEdgeWrapping;
+                texture.wrapT = THREE.ClampToEdgeWrapping;
+
                 // Store texture
                 userData.loadedTextures[lodLevel] = texture;
 

@@ -254,5 +254,13 @@
     "permission_mode": "default",
     "hook_event_name": "Stop",
     "stop_hook_active": false
+  },
+  {
+    "session_id": "31aeb146-bc98-44a7-80c3-8e67f91d8d47",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/31aeb146-bc98-44a7-80c3-8e67f91d8d47.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
   }
 ]
