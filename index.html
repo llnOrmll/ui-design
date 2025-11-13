@@ -182,7 +182,7 @@
     <!-- Navigation -->
     <nav>
         <ul>
-            <li><a href="#projects">Projects</a></li>
+            <li><a href="#" id="projectsLink">Projects</a></li>
             <li><a href="#team">Team</a></li>
             <li><a href="#about">About</a></li>
             <li><a href="#contact">Contact</a></li>
@@ -206,5 +206,75 @@
         }
     </script>
     <script type="module" src="gallery.js"></script>
+
+    <script>
+        // Handle Projects link click with transition
+        document.addEventListener('DOMContentLoaded', () => {
+            const projectsLink = document.getElementById('projectsLink');
+
+            projectsLink.addEventListener('click', (e) => {
+                e.preventDefault();
+
+                // Wait for gallery to be initialized
+                const captureGalleryState = () => {
+                    if (!window.gallery || !window.gallery.images) {
+                        setTimeout(captureGalleryState, 100);
+                        return;
+                    }
+
+                    const gallery = window.gallery;
+                    const transitionData = {
+                        images: []
+                    };
+
+                    // Capture position and data for each visible image
+                    gallery.images.forEach((mesh, index) => {
+                        // Get world position
+                        const worldPos = mesh.position.clone();
+
+                        // Project to screen coordinates
+                        const vector = worldPos.project(gallery.camera);
+                        const canvas = gallery.canvas;
+
+                        const screenX = (vector.x * 0.5 + 0.5) * canvas.clientWidth;
+                        const screenY = (-vector.y * 0.5 + 0.5) * canvas.clientHeight;
+
+                        // Get image dimensions in screen space
+                        const geometry = mesh.geometry;
+                        const worldWidth = geometry.parameters.width;
+                        const worldHeight = geometry.parameters.height;
+
+                        // Calculate screen width based on zoom
+                        const aspect = canvas.clientWidth / canvas.clientHeight;
+                        const frustumSize = gallery.config.camera.frustumSize / gallery.zoom;
+                        const screenScale = canvas.clientHeight / frustumSize;
+
+                        const screenWidth = worldWidth * screenScale;
+                        const screenHeight = worldHeight * screenScale;
+
+                        // Get the image URL
+                        const imageUrl = mesh.userData.urls ? mesh.userData.urls.medium || mesh.userData.urls.high || mesh.userData.urls.low : '';
+
+                        transitionData.images.push({
+                            index,
+                            url: imageUrl,
+                            screenX: screenX - screenWidth / 2,
+                            screenY: screenY - screenHeight / 2,
+                            width: screenWidth,
+                            height: screenHeight
+                        });
+                    });
+
+                    // Save to sessionStorage
+                    sessionStorage.setItem('galleryTransition', JSON.stringify(transitionData));
+
+                    // Navigate to projects page
+                    window.location.href = 'projects.html?from=gallery';
+                };
+
+                captureGalleryState();
+            });
+        });
+    </script>
 </body>
 </html>

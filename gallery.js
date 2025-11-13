@@ -32,7 +32,16 @@ const DEFAULT_CONFIG = {
         galleryFloatAmplitudeX: 0.08,  // Increased amplitude
         galleryFloatAmplitudeY: 0.06,
         galleryFloatSpeedX: 0.3,       // Slower, more dramatic
-        galleryFloatSpeedY: 0.25
+        galleryFloatSpeedY: 0.25,
+        // Momentum/inertia
+        inertiaEnabled: true,
+        friction: 0.85,
+        velocityMultiplier: 0.8,
+        // Hover effects
+        hoverScale: 1.05,
+        hoverSpeed: 0.15,
+        // LOD transitions
+        lodCrossfadeSpeed: 0.08
     },
 
     // Camera controls
@@ -102,6 +111,16 @@ class CanvasGallery {
         this.zoom = this.config.camera.initialZoom;
         this.targetZoom = this.config.camera.initialZoom;
 
+        // Momentum/inertia for natural dragging
+        this.velocity = { x: 0, y: 0 };
+        this.friction = 0.85;
+        this.lastDragDelta = { x: 0, y: 0 };
+        this.dragHistory = [];
+
+        // Hover state
+        this.hoveredImage = null;
+        this.hoverProgress = 0;
+
         // Grid center (set after creating masonry grid)
         this.gridCenterY = 0;
 
@@ -143,6 +162,7 @@ class CanvasGallery {
             mousedown: null,
             mousemove: null,
             mouseup: null,
+            dblclick: null,
             wheel: null,
             resize: null,
             touchstart: null,
@@ -401,7 +421,7 @@ class CanvasGallery {
             case 'bottom': startY = -20; break;
         }
 
-        // Enhanced user data with LOD tracking
+        // Enhanced user data with LOD tracking and crossfade support
         mesh.userData = {
             targetX: x,
             targetY: y,
@@ -416,10 +436,17 @@ class CanvasGallery {
             animationDelay: index * 0.02,
             lodTransitionProgress: 1,
             previousTexture: null,
+            crossfadeProgress: 1,
             // Image metadata
             title: imageData?.title || '',
             alt: imageData?.alt || '',
-            isLoaded: false
+            isLoaded: false,
+            // Hover state
+            hoverProgress: 0,
+            targetHoverProgress: 0,
+            // Frustum culling
+            isVisible: true,
+            lastVisibilityCheck: 0
         };
 
         mesh.position.set(startX, startY, 0);
@@ -456,7 +483,7 @@ class CanvasGallery {
     }
 
     /**
-     * Load texture for specific LOD level
+     * Load texture for specific LOD level with crossfade support
      */
     loadTexture(mesh, lodLevel) {
         const userData = mesh.userData;
@@ -466,7 +493,7 @@ class CanvasGallery {
         if (userData.loadedTextures[lodLevel]) {
             if (userData.currentLOD !== lodLevel) {
                 userData.previousTexture = mesh.material.map;
-                userData.lodTransitionProgress = 0;
+                userData.crossfadeProgress = 0;
             }
 
             mesh.material.map = userData.loadedTextures[lodLevel];
@@ -485,7 +512,7 @@ class CanvasGallery {
                 // Apply if this is still the desired LOD
                 if (userData.targetLOD === lodLevel) {
                     userData.previousTexture = mesh.material.map;
-                    userData.lodTransitionProgress = 0;
+                    userData.crossfadeProgress = 0;
 
                     mesh.material.map = texture;
                     mesh.material.color.set(0xffffff);
@@ -571,8 +598,23 @@ class CanvasGallery {
                 const deltaY = e.clientY - this.previousMousePosition.y;
 
                 const panSpeed = 0.01 / this.zoom;
-                this.cameraTarget.x -= deltaX * panSpeed;
-                this.cameraTarget.y += deltaY * panSpeed;
+                const adjustedDeltaX = deltaX * panSpeed;
+                const adjustedDeltaY = deltaY * panSpeed;
+
+                this.cameraTarget.x -= adjustedDeltaX;
+                this.cameraTarget.y += adjustedDeltaY;
+
+                // Track velocity for momentum (store recent deltas)
+                this.dragHistory.push({
+                    deltaX: adjustedDeltaX,
+                    deltaY: adjustedDeltaY,
+                    time: performance.now()
+                });
+
+                // Keep only last 5 drag events
+                if (this.dragHistory.length > 5) {
+                    this.dragHistory.shift();
+                }
 
                 // Apply boundary constraints
                 this.cameraTarget.x = Math.max(-this.config.camera.boundaryX,
@@ -586,6 +628,9 @@ class CanvasGallery {
                 };
 
                 this.needsRender = true;
+            } else {
+                // Check for hover when not dragging
+                this.updateHover(e);
             }
 
             this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -593,23 +638,100 @@ class CanvasGallery {
         };
         this.canvas.addEventListener('mousemove', this.boundHandlers.mousemove);
 
-        // Mouse up
+        // Mouse up - apply momentum
         this.boundHandlers.mouseup = () => {
+            if (this.isDragging && this.config.animation.inertiaEnabled) {
+                // Calculate average velocity from recent drag history
+                if (this.dragHistory.length > 0) {
+                    const now = performance.now();
+                    const recentDrags = this.dragHistory.filter(drag => now - drag.time < 100);
+
+                    if (recentDrags.length > 0) {
+                        const avgDeltaX = recentDrags.reduce((sum, drag) => sum + drag.deltaX, 0) / recentDrags.length;
+                        const avgDeltaY = recentDrags.reduce((sum, drag) => sum + drag.deltaY, 0) / recentDrags.length;
+
+                        // Apply velocity with multiplier
+                        this.velocity.x = -avgDeltaX * this.config.animation.velocityMultiplier * 15;
+                        this.velocity.y = avgDeltaY * this.config.animation.velocityMultiplier * 15;
+                    }
+                }
+
+                this.dragHistory = [];
+            }
+
             this.isDragging = false;
             this.canvas.style.cursor = 'grab';
         };
         window.addEventListener('mouseup', this.boundHandlers.mouseup);
 
-        // Wheel zoom
+        // Double-click to zoom
+        this.boundHandlers.dblclick = (e) => {
+            const zoomIn = this.targetZoom < this.config.camera.maxZoom * 0.7;
+            const targetZoomLevel = zoomIn ? this.config.camera.maxZoom * 0.8 : this.config.camera.initialZoom;
+
+            // Get mouse position in world coordinates
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            const mouseY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+            // Calculate zoom center point (zoom toward cursor)
+            const aspect = window.innerWidth / window.innerHeight;
+            const frustumSize = this.config.camera.frustumSize / this.zoom;
+            const worldX = this.cameraPosition.x + mouseX * frustumSize * aspect / 2;
+            const worldY = this.cameraPosition.y + mouseY * frustumSize / 2;
+
+            // Adjust camera target to zoom toward cursor
+            const zoomRatio = targetZoomLevel / this.zoom;
+            this.cameraTarget.x = worldX - (worldX - this.cameraPosition.x) / zoomRatio;
+            this.cameraTarget.y = worldY - (worldY - this.cameraPosition.y) / zoomRatio;
+
+            // Apply boundary constraints
+            this.cameraTarget.x = Math.max(-this.config.camera.boundaryX,
+                Math.min(this.config.camera.boundaryX, this.cameraTarget.x));
+            this.cameraTarget.y = Math.max(-this.config.camera.boundaryY,
+                Math.min(this.config.camera.boundaryY, this.cameraTarget.y));
+
+            this.targetZoom = targetZoomLevel;
+            this.needsRender = true;
+        };
+        this.canvas.addEventListener('dblclick', this.boundHandlers.dblclick);
+
+        // Wheel zoom - zoom toward cursor
         this.boundHandlers.wheel = (e) => {
             e.preventDefault();
 
             const zoomSpeed = 0.001;
             const delta = e.deltaY;
 
+            // Get mouse position in normalized device coordinates
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            const mouseY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+            // Calculate world position at cursor before zoom
+            const aspect = window.innerWidth / window.innerHeight;
+            const frustumSize = this.config.camera.frustumSize / this.zoom;
+            const worldX = this.cameraPosition.x + mouseX * frustumSize * aspect / 2;
+            const worldY = this.cameraPosition.y + mouseY * frustumSize / 2;
+
+            // Update zoom
+            const previousZoom = this.targetZoom;
             this.targetZoom *= (1 - delta * zoomSpeed);
             this.targetZoom = Math.max(this.config.camera.minZoom,
                 Math.min(this.config.camera.maxZoom, this.targetZoom));
+
+            // Adjust camera to zoom toward cursor
+            if (this.targetZoom !== previousZoom) {
+                const zoomRatio = this.targetZoom / this.zoom;
+                this.cameraTarget.x = worldX - (worldX - this.cameraTarget.x) / zoomRatio;
+                this.cameraTarget.y = worldY - (worldY - this.cameraTarget.y) / zoomRatio;
+
+                // Apply boundary constraints
+                this.cameraTarget.x = Math.max(-this.config.camera.boundaryX,
+                    Math.min(this.config.camera.boundaryX, this.cameraTarget.x));
+                this.cameraTarget.y = Math.max(-this.config.camera.boundaryY,
+                    Math.min(this.config.camera.boundaryY, this.cameraTarget.y));
+            }
 
             this.needsRender = true;
         };
@@ -712,6 +834,81 @@ class CanvasGallery {
     }
 
     /**
+     * Update hover state - detect which image is under cursor
+     */
+    updateHover(e) {
+        // Update raycaster
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+
+        // Check intersections
+        const intersects = this.raycaster.intersectObjects(this.images);
+
+        if (intersects.length > 0) {
+            const hoveredMesh = intersects[0].object;
+
+            if (this.hoveredImage !== hoveredMesh) {
+                // Clear previous hover
+                if (this.hoveredImage) {
+                    this.hoveredImage.userData.targetHoverProgress = 0;
+                }
+
+                // Set new hover
+                this.hoveredImage = hoveredMesh;
+                this.hoveredImage.userData.targetHoverProgress = 1;
+                this.canvas.style.cursor = 'pointer';
+                this.needsRender = true;
+            }
+        } else if (this.hoveredImage) {
+            // Clear hover
+            this.hoveredImage.userData.targetHoverProgress = 0;
+            this.hoveredImage = null;
+            this.canvas.style.cursor = 'grab';
+            this.needsRender = true;
+        }
+    }
+
+    /**
+     * Check if image is within viewport (frustum culling)
+     */
+    isImageVisible(mesh) {
+        const userData = mesh.userData;
+        const aspect = window.innerWidth / window.innerHeight;
+        const frustumSize = this.config.camera.frustumSize / this.zoom;
+
+        // Calculate viewport bounds in world coordinates
+        const viewLeft = this.cameraPosition.x - frustumSize * aspect / 2;
+        const viewRight = this.cameraPosition.x + frustumSize * aspect / 2;
+        const viewTop = this.cameraPosition.y + frustumSize / 2;
+        const viewBottom = this.cameraPosition.y - frustumSize / 2;
+
+        // Get image bounds
+        const geometry = mesh.geometry;
+        const width = geometry.parameters.width;
+        const height = geometry.parameters.height;
+
+        const imgLeft = mesh.position.x - width / 2;
+        const imgRight = mesh.position.x + width / 2;
+        const imgTop = mesh.position.y + height / 2;
+        const imgBottom = mesh.position.y - height / 2;
+
+        // Check if image intersects with viewport (with buffer for preloading)
+        const buffer = 2;
+        return !(imgRight < viewLeft - buffer ||
+                 imgLeft > viewRight + buffer ||
+                 imgBottom > viewTop + buffer ||
+                 imgTop < viewBottom - buffer);
+    }
+
+    /**
+     * Update frustum culling and visibility
+     */
+    updateVisibility() {
+        this.images.forEach(mesh => {
+            mesh.userData.isVisible = this.isImageVisible(mesh);
+        });
+    }
+
+    /**
      * Main animation loop with render-on-demand
      */
     animate(timestamp = 0) {
@@ -724,15 +921,38 @@ class CanvasGallery {
 
         this.time += deltaSeconds;
 
+        // Apply momentum/inertia to camera
+        if (!this.isDragging && this.config.animation.inertiaEnabled) {
+            const hasVelocity = Math.abs(this.velocity.x) > 0.0001 || Math.abs(this.velocity.y) > 0.0001;
+
+            if (hasVelocity) {
+                this.cameraTarget.x += this.velocity.x * deltaSeconds;
+                this.cameraTarget.y += this.velocity.y * deltaSeconds;
+
+                // Apply boundary constraints
+                this.cameraTarget.x = Math.max(-this.config.camera.boundaryX,
+                    Math.min(this.config.camera.boundaryX, this.cameraTarget.x));
+                this.cameraTarget.y = Math.max(-this.config.camera.boundaryY,
+                    Math.min(this.config.camera.boundaryY, this.cameraTarget.y));
+
+                // Apply friction
+                this.velocity.x *= this.config.animation.friction;
+                this.velocity.y *= this.config.animation.friction;
+
+                this.needsRender = true;
+            }
+        }
+
         // Check if we need to render
         const hasActiveIntro = this.introAnimationProgress < 1;
         const hasActiveFloating = this.config.animation.floatingEnabled;
         const hasCameraMovement = Math.abs(this.cameraPosition.x - this.cameraTarget.x) > 0.001 ||
                                   Math.abs(this.cameraPosition.y - this.cameraTarget.y) > 0.001;
         const hasZoomChange = Math.abs(this.zoom - this.targetZoom) > 0.001;
+        const hasVelocity = Math.abs(this.velocity.x) > 0.0001 || Math.abs(this.velocity.y) > 0.0001;
 
         // Skip render if nothing is animating and no user interaction
-        if (!this.needsRender && !hasActiveIntro && !hasCameraMovement && !hasZoomChange && !hasActiveFloating) {
+        if (!this.needsRender && !hasActiveIntro && !hasCameraMovement && !hasZoomChange && !hasActiveFloating && !hasVelocity) {
             return;
         }
 
@@ -771,6 +991,11 @@ class CanvasGallery {
             this.updateTextureLOD();
         }
 
+        // Update visibility (frustum culling) every 100ms for performance
+        if (this.time % 0.1 < deltaSeconds) {
+            this.updateVisibility();
+        }
+
         // Update camera projection based on zoom
         const aspect = window.innerWidth / window.innerHeight;
         const frustumSize = this.config.camera.frustumSize / this.zoom;
@@ -780,9 +1005,14 @@ class CanvasGallery {
         this.camera.bottom = frustumSize / -2;
         this.camera.updateProjectionMatrix();
 
-        // Animate images (intro + floating)
+        // Animate images (intro + floating + hover + LOD crossfade)
         this.images.forEach(mesh => {
             const userData = mesh.userData;
+
+            // Only process visible images for performance (intro animation always runs)
+            if (!userData.isVisible && this.introAnimationProgress >= 1) {
+                return;
+            }
 
             // Intro slide-in animation
             const delayedProgress = Math.max(0, Math.min(1,
@@ -806,10 +1036,26 @@ class CanvasGallery {
                 mesh.material.opacity = 1;
             }
 
-            // Smooth LOD transition
-            if (userData.lodTransitionProgress < 1) {
-                userData.lodTransitionProgress += 0.05;
-                userData.lodTransitionProgress = Math.min(1, userData.lodTransitionProgress);
+            // Hover effect - smooth scale
+            userData.hoverProgress += (userData.targetHoverProgress - userData.hoverProgress) * this.config.animation.hoverSpeed;
+
+            if (userData.hoverProgress > 0.001) {
+                const hoverScale = 1 + (this.config.animation.hoverScale - 1) * userData.hoverProgress;
+                mesh.scale.set(hoverScale, hoverScale, 1);
+                mesh.position.z = userData.hoverProgress * 0.1; // Slight lift effect
+            } else {
+                mesh.scale.set(1, 1, 1);
+                mesh.position.z = 0;
+            }
+
+            // Smooth LOD crossfade transition
+            if (userData.crossfadeProgress < 1) {
+                userData.crossfadeProgress += this.config.animation.lodCrossfadeSpeed;
+                userData.crossfadeProgress = Math.min(1, userData.crossfadeProgress);
+
+                // Fade in the new texture
+                const fadeProgress = userData.crossfadeProgress;
+                mesh.material.opacity = delayedProgress >= 1 ? fadeProgress : eased * fadeProgress;
             }
         });
 
@@ -881,6 +1127,9 @@ class CanvasGallery {
         if (this.boundHandlers.mouseup) {
             window.removeEventListener('mouseup', this.boundHandlers.mouseup);
         }
+        if (this.boundHandlers.dblclick) {
+            this.canvas.removeEventListener('dblclick', this.boundHandlers.dblclick);
+        }
         if (this.boundHandlers.wheel) {
             this.canvas.removeEventListener('wheel', this.boundHandlers.wheel);
         }
@@ -945,5 +1194,6 @@ class CanvasGallery {
 // Initialize gallery
 const gallery = new CanvasGallery();
 
-// Expose destroy method for cleanup (e.g., on page navigation)
+// Expose gallery instance and methods globally
+window.gallery = gallery;
 window.galleryCleanup = () => gallery.destroy();

@@ -272,6 +272,42 @@
         .project-card:nth-child(8) { animation-delay: 0.4s; }
         .project-card:nth-child(9) { animation-delay: 0.45s; }
         .project-card:nth-child(10) { animation-delay: 0.5s; }
+        .project-card:nth-child(11) { animation-delay: 0.55s; }
+        .project-card:nth-child(12) { animation-delay: 0.6s; }
+        .project-card:nth-child(13) { animation-delay: 0.65s; }
+        .project-card:nth-child(14) { animation-delay: 0.7s; }
+        .project-card:nth-child(15) { animation-delay: 0.75s; }
+
+        /* Transition morphing classes */
+        .morphing-image {
+            position: fixed;
+            z-index: 9999;
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+        }
+
+        .morphing-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .fade-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            z-index: 9998;
+        }
+
+        .fade-overlay.active {
+            opacity: 1;
+        }
 
         /* Mobile Responsive */
         @media (max-width: 768px) {
@@ -296,12 +332,15 @@
     </style>
 </head>
 <body>
+    <!-- Fade overlay for transition -->
+    <div class="fade-overlay" id="fadeOverlay"></div>
+
     <header>
         <div class="header-container">
-            <a href="siteon.html" class="logo">Choi's Interior Design</a>
+            <a href="/" class="logo">Choi's Interior Design</a>
             <nav>
-                <a href="projects.html">Projects</a>
-                <a href="#team">Team</a>
+                <a href="projects.html" style="font-weight: 500;">Projects</a>
+                <a href="/">Gallery</a>
                 <a href="#about">About</a>
                 <a href="#contact">Contact</a>
             </nav>
@@ -331,8 +370,24 @@
     </main>
 
     <script>
+        // Global state for transition data
+        let transitionData = null;
+
+        // Check if we're transitioning from gallery
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromGallery = urlParams.get('from') === 'gallery';
+
+            if (fromGallery && sessionStorage.getItem('galleryTransition')) {
+                transitionData = JSON.parse(sessionStorage.getItem('galleryTransition'));
+                sessionStorage.removeItem('galleryTransition');
+            }
+
+            loadProjects(fromGallery);
+        });
+
         // Load projects from JSON file
-        async function loadProjects() {
+        async function loadProjects(withTransition = false) {
             try {
                 console.log('Loading projects from gallery-images.json...');
                 const response = await fetch('gallery-images.json');
@@ -346,32 +401,115 @@
 
                 const grid = document.getElementById('projectsGrid');
 
-                projects.forEach((project, index) => {
-                    const card = document.createElement('div');
-                    card.className = 'project-card';
-                    card.style.animationDelay = `${index * 0.05}s`;
-
-                    card.innerHTML = `
-                        <div class="project-image">
-                            <img src="${project.imageUrl}"
-                                 alt="${project.alt}"
-                                 loading="lazy"
-                                 onerror="console.error('Failed to load image:', this.src)">
-                        </div>
-                        <h3 class="project-title">${project.title}</h3>
-                    `;
-
-                    grid.appendChild(card);
-                });
-
-                console.log('All project cards created successfully');
-
-                // Add intersection observer after cards are created
-                initializeObserver();
+                if (withTransition && transitionData) {
+                    // Create morphing transition
+                    createMorphingTransition(projects, grid);
+                } else {
+                    // Normal load with stagger animation
+                    renderProjects(projects, grid);
+                }
             } catch (error) {
                 console.error('Error loading projects:', error);
-                const grid = document.getElementById('projectsGrid');
-                grid.innerHTML = '<p style="color: red; padding: 20px;">Error loading projects. Please check the console for details.</p>';
+                document.getElementById('projectsGrid').innerHTML =
+                    '<p style="color: red; padding: 20px;">Error loading projects. Please check the console for details.</p>';
+            }
+        }
+
+        // Create morphing transition effect
+        function createMorphingTransition(projects, grid) {
+            const overlay = document.getElementById('fadeOverlay');
+
+            // Show fade overlay
+            overlay.classList.add('active');
+
+            // Create temporary morphing images
+            const morphingImages = [];
+            transitionData.images.forEach((imageData, index) => {
+                if (index >= projects.length) return;
+
+                const morphImg = document.createElement('div');
+                morphImg.className = 'morphing-image';
+                morphImg.style.left = `${imageData.screenX}px`;
+                morphImg.style.top = `${imageData.screenY}px`;
+                morphImg.style.width = `${imageData.width}px`;
+                morphImg.style.height = `${imageData.height}px`;
+
+                const img = document.createElement('img');
+                img.src = projects[index].imageUrl;
+                img.alt = projects[index].alt || '';
+
+                morphImg.appendChild(img);
+                document.body.appendChild(morphImg);
+                morphingImages.push({ element: morphImg, index });
+            });
+
+            // Render project cards invisibly to get their positions
+            renderProjects(projects, grid, true);
+
+            // Wait for layout calculation
+            requestAnimationFrame(() => {
+                const cards = grid.querySelectorAll('.project-card');
+
+                // Start morphing transition
+                setTimeout(() => {
+                    overlay.classList.remove('active');
+
+                    morphingImages.forEach(({ element, index }) => {
+                        if (index < cards.length) {
+                            const targetCard = cards[index];
+                            const targetImage = targetCard.querySelector('.project-image');
+                            const rect = targetImage.getBoundingClientRect();
+
+                            element.style.left = `${rect.left}px`;
+                            element.style.top = `${rect.top}px`;
+                            element.style.width = `${rect.width}px`;
+                            element.style.height = `${rect.height}px`;
+                            element.style.opacity = '0';
+                        }
+                    });
+
+                    // Remove morphing images and show real cards after transition
+                    setTimeout(() => {
+                        morphingImages.forEach(({ element }) => element.remove());
+                        cards.forEach(card => {
+                            card.style.opacity = '1';
+                        });
+                    }, 800);
+                }, 100);
+            });
+        }
+
+        // Render project cards
+        function renderProjects(projects, grid, hidden = false) {
+            grid.innerHTML = '';
+
+            projects.forEach((project, index) => {
+                const card = document.createElement('div');
+                card.className = 'project-card';
+                card.style.animationDelay = `${index * 0.05}s`;
+                if (hidden) {
+                    card.style.opacity = '0';
+                    card.style.animation = 'none';
+                }
+
+                card.innerHTML = `
+                    <div class="project-image">
+                        <img src="${project.imageUrl}"
+                             alt="${project.alt}"
+                             loading="lazy"
+                             onerror="console.error('Failed to load image:', this.src)">
+                    </div>
+                    <h3 class="project-title">${project.title}</h3>
+                `;
+
+                grid.appendChild(card);
+            });
+
+            console.log('All project cards created successfully');
+
+            // Add intersection observer after cards are created
+            if (!hidden) {
+                initializeObserver();
             }
         }
 
@@ -392,9 +530,6 @@
                 observer.observe(card);
             });
         }
-
-        // Load projects on page load
-        loadProjects();
 
         // Smooth scroll for navigation
         document.querySelectorAll('nav a').forEach(anchor => {
