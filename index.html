@@ -82,33 +82,21 @@
             cursor: grabbing;
         }
 
-        /* Center Text Overlay - Behind gallery */
-        .center-text {
+        /* Hero Text Overlay */
+        #heroText {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 1;
-            pointer-events: none;
-            opacity: 1;
-        }
-
-        .center-text h1 {
-            font-size: clamp(80px, 12vw, 180px);
+            font-size: clamp(80px, 15vw, 200px);
             font-weight: 700;
-            letter-spacing: 0.15em;
-            color: #e0e0e0;
-            text-align: center;
-            white-space: nowrap;
             font-family: Graphik, Helvetica, Arial, sans-serif;
-            text-transform: uppercase;
-        }
-
-        @media (max-width: 768px) {
-            .center-text h1 {
-                font-size: clamp(50px, 15vw, 100px);
-                letter-spacing: 0.1em;
-            }
+            letter-spacing: -0.02em;
+            color: #ffffff;
+            z-index: 100;
+            pointer-events: none;
+            mix-blend-mode: difference;
+            user-select: none;
         }
 
         /* Navigation Bar */
@@ -204,10 +192,8 @@
         <canvas id="canvas" class="_2Omd89"></canvas>
     </div>
 
-    <!-- Central Text Overlay -->
-    <div class="center-text">
-        <h1>HOUSE</h1>
-    </div>
+    <!-- Hero Text Overlay -->
+    <div id="heroText">HOUSE</div>
 
     <script type="importmap">
         {
@@ -266,13 +252,29 @@
                         // Get the image URL
                         const imageUrl = mesh.userData.urls ? mesh.userData.urls.medium || mesh.userData.urls.high || mesh.userData.urls.low : '';
 
+                        // Calculate depth for parallax effect (distance from screen center)
+                        const centerX = canvas.clientWidth / 2;
+                        const centerY = canvas.clientHeight / 2;
+                        const distanceFromCenter = Math.sqrt(
+                            Math.pow(screenX - centerX, 2) +
+                            Math.pow(screenY - centerY, 2)
+                        );
+
+                        // Calculate rotation angle based on position
+                        const angle = Math.atan2(screenY - centerY, screenX - centerX);
+
                         transitionData.images.push({
                             index,
                             url: imageUrl,
                             screenX: screenX - screenWidth / 2,
                             screenY: screenY - screenHeight / 2,
                             width: screenWidth,
-                            height: screenHeight
+                            height: screenHeight,
+                            rotation: mesh.rotation.z || 0,
+                            scale: mesh.scale.x || 1,
+                            opacity: mesh.material.opacity || 1,
+                            depth: distanceFromCenter,
+                            angle: angle
                         });
                     });
 
