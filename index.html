@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Powerhouse - Architecture Exploration</title>
+    <style>
+        :root {
+            --page-margin: 6.66667vw;
+            --footer-height: 0;
+        }
+
+        @media only screen and (min-width: 768px) {
+            :root {
+                --page-margin: 2.32558vw;
+                --footer-height: 76px;
+            }
+        }
+
+        *, :after, :before {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            outline: none;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+        }
+
+        html {
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            -webkit-overflow-scrolling: touch;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+            overflow-x: hidden !important;
+            width: 100%;
+            height: 100%;
+            color: #000;
+            background: #fff;
+        }
+
+        body {
+            font-size: 18px;
+            font-family: Graphik, Helvetica, Arial, sans-serif;
+            font-weight: 400;
+            letter-spacing: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #ebebeb;
+            color: #000;
+        }
+
+        /* Canvas Container */
+        ._3nOEWG {
+            cursor: -webkit-grab;
+            cursor: grab;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 2;
+        }
+
+        /* Canvas Element */
+        ._2Omd89 {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+
+        #canvas:active,
+        ._3nOEWG:active {
+            cursor: grabbing;
+        }
+
+        /* Center Text Overlay */
+        .center-text {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            pointer-events: none;
+            mix-blend-mode: difference;
+        }
+
+        .center-text h1 {
+            font-size: clamp(80px, 12vw, 180px);
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            color: #fff;
+            text-align: center;
+            white-space: nowrap;
+            font-family: Graphik, Helvetica, Arial, sans-serif;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 768px) {
+            .center-text h1 {
+                font-size: clamp(50px, 15vw, 100px);
+                letter-spacing: 0.1em;
+            }
+        }
+
+        /* Navigation Bar */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            background: transparent;
+            pointer-events: none;
+        }
+
+        nav ul {
+            display: flex;
+            gap: 40px;
+            list-style: none;
+            pointer-events: auto;
+            margin-top: 30px;
+            padding: 15px 50px;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 50px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08),
+                        0 1px 3px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        nav li {
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        nav a {
+            color: #000;
+            text-decoration: none;
+            transition: opacity 0.3s ease;
+            cursor: pointer;
+        }
+
+        nav a:hover {
+            opacity: 0.6;
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                padding: 0;
+            }
+
+            nav ul {
+                gap: 20px;
+                margin-top: 20px;
+                padding: 12px 30px;
+                border-radius: 40px;
+            }
+
+            nav li {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <ul>
+            <li><a href="#projects">Projects</a></li>
+            <li><a href="#team">Team</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+    </nav>
+
+    <div class="_3nOEWG">
+        <canvas id="canvas" class="_2Omd89"></canvas>
+    </div>
+
+    <!-- Central Text Overlay -->
+    <div class="center-text">
+        <h1>HOUSE</h1>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+    <script type="module" src="gallery.js"></script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+[
+  {
+    "session_id": "33c1bcaa-eb36-474d-924a-ea2555c9d5ad",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/33c1bcaa-eb36-474d-924a-ea2555c9d5ad.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "33c1bcaa-eb36-474d-924a-ea2555c9d5ad",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/33c1bcaa-eb36-474d-924a-ea2555c9d5ad.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "3984d20e-3ca3-46c4-931f-1b1ca83a2b29",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/3984d20e-3ca3-46c4-931f-1b1ca83a2b29.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "3984d20e-3ca3-46c4-931f-1b1ca83a2b29",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/3984d20e-3ca3-46c4-931f-1b1ca83a2b29.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "555c97b9-a2c0-49b9-b444-8692c0fe3d96",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/555c97b9-a2c0-49b9-b444-8692c0fe3d96.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "555c97b9-a2c0-49b9-b444-8692c0fe3d96",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/555c97b9-a2c0-49b9-b444-8692c0fe3d96.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "555c97b9-a2c0-49b9-b444-8692c0fe3d96",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/555c97b9-a2c0-49b9-b444-8692c0fe3d96.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "plan",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false
+  }
+]
