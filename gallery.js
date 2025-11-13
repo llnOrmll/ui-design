@@ -54,19 +54,31 @@ const DEFAULT_CONFIG = {
         frustumSize: 10
     },
 
-    // LOD (Level of Detail) thresholds
+    // LOD (Level of Detail) thresholds - prioritize quality
     lod: {
-        low: { min: 0, max: 1.3, width: 400 },
-        medium: { min: 1.0, max: 2.2, width: 800 },
-        high: { min: 1.8, max: Infinity, width: 1200 }
+        low: { min: 0, max: 1.2, width: 800 },
+        medium: { min: 1.0, max: 2.0, width: 1200 },
+        high: { min: 1.5, max: Infinity, width: 1600 }
     },
 
-    // Renderer settings
+    // Renderer settings - premium quality
     renderer: {
-        antialias: false,
-        alpha: false,
+        antialias: true,  // Enable for smoother edges
+        alpha: true,
         powerPreference: 'high-performance',
-        maxPixelRatio: 2
+        maxPixelRatio: window.devicePixelRatio, // Use full device resolution
+        shadowMap: true,
+        toneMapping: true
+    },
+
+    // Visual effects
+    effects: {
+        shadows: true,
+        depthOfField: false,  // Can be enabled for dramatic effect
+        bloom: true,
+        vignette: true,
+        imageReflections: true,
+        parallaxStrength: 0.03
     },
 
     // Network settings
@@ -103,6 +115,16 @@ class CanvasGallery {
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
 
+        // Advanced lighting
+        this.lights = {
+            ambient: null,
+            directional: null,
+            spotlight: null
+        };
+
+        // Shadow plane for depth perception
+        this.shadowPlane = null;
+
         // Camera controls state
         this.isDragging = false;
         this.previousMousePosition = { x: 0, y: 0 };
@@ -136,6 +158,13 @@ class CanvasGallery {
         // Texture management
         this.textureLoader = new THREE.TextureLoader();
         this.loadingSpinners = [];
+
+        // Loading progress tracking
+        this.totalImagesToLoad = 0;
+        this.imagesLoaded = 0;
+        this.loadingProgressBar = document.getElementById('loadingProgress');
+        this.loadingPercent = document.getElementById('loadingPercent');
+        this.loadingScreen = document.getElementById('loadingScreen');
 
         // Responsive design
         this.currentColumns = this.calculateColumns();
@@ -224,9 +253,10 @@ class CanvasGallery {
             return false;
         }
 
-        // Scene
+        // Scene with transparent background
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0xf5f5f5);
+        this.scene.background = null;  // Transparent background
+        // Fog removed for transparent background
 
         // Camera (orthographic for 2D-like view)
         const aspect = window.innerWidth / window.innerHeight;
@@ -241,24 +271,83 @@ class CanvasGallery {
         );
         this.camera.position.z = 10;
 
-        // Renderer with optimized settings
+        // Renderer with premium settings
         this.renderer = new THREE.WebGLRenderer({
             canvas: this.canvas,
             antialias: this.config.renderer.antialias,
             alpha: this.config.renderer.alpha,
-            powerPreference: this.config.renderer.powerPreference
+            powerPreference: this.config.renderer.powerPreference,
+            stencil: false,
+            depth: true
         });
+
+        // Enable shadows if configured
+        if (this.config.effects.shadows) {
+            this.renderer.shadowMap.enabled = true;
+            this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Soft shadows
+        }
+
+        // Enable tone mapping for better color reproduction
+        if (this.config.renderer.toneMapping) {
+            this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            this.renderer.toneMappingExposure = 1.3;  // Increased for brighter images
+        }
 
         this.updateRendererSize();
 
+        // Setup advanced lighting
+        this.setupLighting();
+
         return true;
+    }
+
+    /**
+     * Setup advanced lighting system
+     */
+    setupLighting() {
+        // Ambient light for overall illumination (increased for brighter images)
+        this.lights.ambient = new THREE.AmbientLight(0xffffff, 1.2);
+        this.scene.add(this.lights.ambient);
+
+        // Main directional light (like sunlight) with shadows
+        this.lights.directional = new THREE.DirectionalLight(0xffffff, 0.5);
+        this.lights.directional.position.set(5, 10, 7.5);
+        this.lights.directional.castShadow = this.config.effects.shadows;
+
+        if (this.config.effects.shadows) {
+            // Configure shadow properties for quality
+            this.lights.directional.shadow.mapSize.width = 2048;
+            this.lights.directional.shadow.mapSize.height = 2048;
+            this.lights.directional.shadow.camera.near = 0.5;
+            this.lights.directional.shadow.camera.far = 50;
+            this.lights.directional.shadow.camera.left = -20;
+            this.lights.directional.shadow.camera.right = 20;
+            this.lights.directional.shadow.camera.top = 20;
+            this.lights.directional.shadow.camera.bottom = -20;
+            this.lights.directional.shadow.bias = -0.0001;
+            this.lights.directional.shadow.radius = 2; // Soft shadow blur
+        }
+
+        this.scene.add(this.lights.directional);
+
+        // Subtle fill light from opposite direction (increased)
+        const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
+        fillLight.position.set(-5, -5, 5);
+        this.scene.add(fillLight);
+
+        // Add subtle rim light for depth (increased)
+        const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        rimLight.position.set(0, 0, -10);
+        this.scene.add(rimLight);
+
+        console.log('✨ Advanced lighting setup complete');
     }
 
     /**
      * Update renderer size with proper device pixel ratio handling
      */
     updateRendererSize() {
-        const dpr = Math.min(window.devicePixelRatio, this.config.renderer.maxPixelRatio);
+        const dpr = this.config.renderer.maxPixelRatio;
 
         // Get integer pixel dimensions for pixel-perfect rendering
         const width = Math.floor(window.innerWidth);
@@ -291,6 +380,10 @@ class CanvasGallery {
 
         // Track column heights for masonry layout
         const columnHeights = new Array(columns).fill(0);
+
+        // Set total images to track loading progress
+        this.totalImagesToLoad = galleryImages.length;
+        this.imagesLoaded = 0;
 
         galleryImages.forEach((imageData, index) => {
             // Find shortest column
@@ -392,20 +485,30 @@ class CanvasGallery {
     }
 
     /**
-     * Create image plane with loading spinner
+     * Create image plane with loading spinner and premium materials
      */
     createImagePlane(urls, width, height, x, y, index, imageData = null) {
         const geometry = new THREE.PlaneGeometry(width, height);
 
-        // Create material with fade support
-        const material = new THREE.MeshBasicMaterial({
-            color: 0xdddddd,
+        // Create premium material with lighting response (optimized for brightness)
+        const material = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
             side: THREE.DoubleSide,
             transparent: true,
-            opacity: 0
+            opacity: 0,
+            roughness: 0.3,  // Reduced for more light reflection
+            metalness: 0.0,  // Reduced for brighter appearance
+            emissive: 0x000000,
+            emissiveIntensity: 0
         });
 
         const mesh = new THREE.Mesh(geometry, material);
+
+        // Enable shadow casting and receiving
+        if (this.config.effects.shadows) {
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+        }
 
         // Slide-in direction for intro animation
         const directions = ['left', 'right', 'top', 'bottom'];
@@ -430,8 +533,8 @@ class CanvasGallery {
             originalX: x,
             originalY: y,
             urls: urls,
-            currentLOD: 'low',
-            targetLOD: 'low',
+            currentLOD: null,
+            targetLOD: 'medium',  // Start with medium quality for better initial look
             loadedTextures: {},
             animationDelay: index * 0.02,
             lodTransitionProgress: 1,
@@ -441,9 +544,13 @@ class CanvasGallery {
             title: imageData?.title || '',
             alt: imageData?.alt || '',
             isLoaded: false,
-            // Hover state
+            // Hover state - 3D rotation
             hoverProgress: 0,
             targetHoverProgress: 0,
+            rotationX: 0,
+            rotationY: 0,
+            targetRotationX: 0,
+            targetRotationY: 0,
             // Frustum culling
             isVisible: true,
             lastVisibilityCheck: 0
@@ -457,8 +564,8 @@ class CanvasGallery {
         // Create loading spinner
         this.createLoadingSpinner(x, y, mesh);
 
-        // Start loading low-res texture
-        this.loadTexture(mesh, 'low');
+        // Start loading medium-res texture for better quality
+        this.loadTexture(mesh, 'medium');
     }
 
     /**
@@ -522,6 +629,9 @@ class CanvasGallery {
 
                     this.needsRender = true;
 
+                    // Update loading progress
+                    this.updateLoadingProgress();
+
                     console.log(`✅ Loaded ${lodLevel} for image (zoom: ${this.zoom.toFixed(2)})`);
                 }
             },
@@ -529,8 +639,37 @@ class CanvasGallery {
             (error) => {
                 console.warn(`❌ Failed to load image (${lodLevel}): ${url}`, error);
                 userData.isLoaded = true; // Mark as loaded to remove spinner
+                this.updateLoadingProgress();
             }
         );
+    }
+
+    /**
+     * Update loading progress UI
+     */
+    updateLoadingProgress() {
+        this.imagesLoaded++;
+        const progress = (this.imagesLoaded / this.totalImagesToLoad) * 100;
+
+        if (this.loadingProgressBar) {
+            this.loadingProgressBar.style.width = `${progress}%`;
+        }
+
+        if (this.loadingPercent) {
+            this.loadingPercent.textContent = `${Math.round(progress)}%`;
+        }
+
+        // Hide loading screen when all images are loaded
+        if (this.imagesLoaded >= this.totalImagesToLoad && this.loadingScreen) {
+            setTimeout(() => {
+                this.loadingScreen.style.opacity = '0';
+                setTimeout(() => {
+                    this.loadingScreen.style.display = 'none';
+                }, 500);
+            }, 300);
+
+            console.log('🎨 All images loaded - Gallery ready!');
+        }
     }
 
     /**
@@ -834,7 +973,7 @@ class CanvasGallery {
     }
 
     /**
-     * Update hover state - detect which image is under cursor
+     * Update hover state - detect which image is under cursor with 3D rotation
      */
     updateHover(e) {
         // Update raycaster
@@ -845,11 +984,14 @@ class CanvasGallery {
 
         if (intersects.length > 0) {
             const hoveredMesh = intersects[0].object;
+            const intersection = intersects[0];
 
             if (this.hoveredImage !== hoveredMesh) {
                 // Clear previous hover
                 if (this.hoveredImage) {
                     this.hoveredImage.userData.targetHoverProgress = 0;
+                    this.hoveredImage.userData.targetRotationX = 0;
+                    this.hoveredImage.userData.targetRotationY = 0;
                 }
 
                 // Set new hover
@@ -858,9 +1000,25 @@ class CanvasGallery {
                 this.canvas.style.cursor = 'pointer';
                 this.needsRender = true;
             }
+
+            // Calculate 3D tilt based on mouse position relative to image center
+            if (this.hoveredImage && intersection.uv) {
+                // UV coordinates are 0-1, convert to -1 to 1 for rotation
+                const centerU = intersection.uv.x - 0.5;
+                const centerV = intersection.uv.y - 0.5;
+
+                // Tilt strength (in radians)
+                const tiltStrength = 0.15;
+
+                // Calculate target rotation (opposite to mouse position for parallax effect)
+                this.hoveredImage.userData.targetRotationX = -centerV * tiltStrength;
+                this.hoveredImage.userData.targetRotationY = centerU * tiltStrength;
+            }
         } else if (this.hoveredImage) {
             // Clear hover
             this.hoveredImage.userData.targetHoverProgress = 0;
+            this.hoveredImage.userData.targetRotationX = 0;
+            this.hoveredImage.userData.targetRotationY = 0;
             this.hoveredImage = null;
             this.canvas.style.cursor = 'grab';
             this.needsRender = true;
@@ -970,17 +1128,22 @@ class CanvasGallery {
         // Apply gallery-wide floating animation (entire gallery moves together)
         let galleryOffsetX = 0;
         let galleryOffsetY = 0;
+        let galleryOffsetZ = 0;
 
         if (this.config.animation.floatingEnabled && this.introAnimationProgress >= 1) {
             const { galleryFloatAmplitudeX, galleryFloatAmplitudeY, galleryFloatSpeedX, galleryFloatSpeedY } = this.config.animation;
             galleryOffsetX = Math.sin(this.time * galleryFloatSpeedX + this.galleryFloatPhaseX) * galleryFloatAmplitudeX;
             galleryOffsetY = Math.cos(this.time * galleryFloatSpeedY + this.galleryFloatPhaseY) * galleryFloatAmplitudeY;
+
+            // Add subtle Z-axis movement for depth
+            galleryOffsetZ = Math.sin(this.time * galleryFloatSpeedX * 0.5) * 0.02;
         }
 
         // Apply camera position with gallery-wide floating offset
         // NO rounding here - smooth sub-pixel animation is important for fluidity
         this.camera.position.x = this.cameraPosition.x + galleryOffsetX;
         this.camera.position.y = this.cameraPosition.y + galleryOffsetY;
+        this.camera.position.z = 10 + galleryOffsetZ;
 
         // Smooth zoom
         const previousZoom = this.zoom;
@@ -1036,16 +1199,35 @@ class CanvasGallery {
                 mesh.material.opacity = 1;
             }
 
-            // Hover effect - smooth scale
+            // Hover effect - smooth scale and 3D rotation
             userData.hoverProgress += (userData.targetHoverProgress - userData.hoverProgress) * this.config.animation.hoverSpeed;
+
+            // Smooth rotation interpolation
+            userData.rotationX += (userData.targetRotationX - userData.rotationX) * 0.1;
+            userData.rotationY += (userData.targetRotationY - userData.rotationY) * 0.1;
 
             if (userData.hoverProgress > 0.001) {
                 const hoverScale = 1 + (this.config.animation.hoverScale - 1) * userData.hoverProgress;
                 mesh.scale.set(hoverScale, hoverScale, 1);
-                mesh.position.z = userData.hoverProgress * 0.1; // Slight lift effect
+                mesh.position.z = userData.hoverProgress * 0.3; // More pronounced lift effect
+
+                // Apply 3D rotation for tilt effect
+                mesh.rotation.x = userData.rotationX;
+                mesh.rotation.y = userData.rotationY;
+
+                // Add subtle glow effect on hover
+                if (mesh.material.emissiveIntensity !== undefined) {
+                    mesh.material.emissiveIntensity = userData.hoverProgress * 0.1;
+                }
             } else {
                 mesh.scale.set(1, 1, 1);
                 mesh.position.z = 0;
+                mesh.rotation.x = 0;
+                mesh.rotation.y = 0;
+
+                if (mesh.material.emissiveIntensity !== undefined) {
+                    mesh.material.emissiveIntensity = 0;
+                }
             }
 
             // Smooth LOD crossfade transition
