@@ -102,5 +102,105 @@
     "permission_mode": "default",
     "hook_event_name": "SubagentStop",
     "stop_hook_active": false
+  },
+  {
+    "session_id": "643da19e-255c-4730-9ab7-c8a5d0a32c7c",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/643da19e-255c-4730-9ab7-c8a5d0a32c7c.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false,
+    "agent_id": "05030583",
+    "agent_transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/agent-05030583.jsonl"
+  },
+  {
+    "session_id": "643da19e-255c-4730-9ab7-c8a5d0a32c7c",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/643da19e-255c-4730-9ab7-c8a5d0a32c7c.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false,
+    "agent_id": "0b3a0fed",
+    "agent_transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/agent-0b3a0fed.jsonl"
+  },
+  {
+    "session_id": "2b7d3f9a-34d9-43da-924e-6128c31bfcc6",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/2b7d3f9a-34d9-43da-924e-6128c31bfcc6.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false,
+    "agent_id": "382c4623",
+    "agent_transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/agent-382c4623.jsonl"
+  },
+  {
+    "session_id": "2b7d3f9a-34d9-43da-924e-6128c31bfcc6",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/2b7d3f9a-34d9-43da-924e-6128c31bfcc6.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false,
+    "agent_id": "e4ce408a",
+    "agent_transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/agent-e4ce408a.jsonl"
+  },
+  {
+    "session_id": "0d9a0101-6633-47c8-a19f-4ffad0b260e5",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/0d9a0101-6633-47c8-a19f-4ffad0b260e5.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false,
+    "agent_id": "110b2b8b",
+    "agent_transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/agent-110b2b8b.jsonl"
+  },
+  {
+    "session_id": "0d9a0101-6633-47c8-a19f-4ffad0b260e5",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/0d9a0101-6633-47c8-a19f-4ffad0b260e5.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false,
+    "agent_id": "cc1c05ef",
+    "agent_transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/agent-cc1c05ef.jsonl"
+  },
+  {
+    "session_id": "0d9a0101-6633-47c8-a19f-4ffad0b260e5",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/0d9a0101-6633-47c8-a19f-4ffad0b260e5.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false,
+    "agent_id": "9fb3cfd4",
+    "agent_transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/agent-9fb3cfd4.jsonl"
+  },
+  {
+    "session_id": "7270000a-6f4b-4e6d-bebb-8ffdbb130fb5",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/7270000a-6f4b-4e6d-bebb-8ffdbb130fb5.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false,
+    "agent_id": "b029eaea",
+    "agent_transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/agent-b029eaea.jsonl"
+  },
+  {
+    "session_id": "7270000a-6f4b-4e6d-bebb-8ffdbb130fb5",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/7270000a-6f4b-4e6d-bebb-8ffdbb130fb5.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false,
+    "agent_id": "20579ae6",
+    "agent_transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/agent-20579ae6.jsonl"
+  },
+  {
+    "session_id": "7270000a-6f4b-4e6d-bebb-8ffdbb130fb5",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/7270000a-6f4b-4e6d-bebb-8ffdbb130fb5.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "permission_mode": "default",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false,
+    "agent_id": "7093f8c0",
+    "agent_transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/agent-7093f8c0.jsonl"
   }
 ]

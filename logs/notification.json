@@ -118,5 +118,21 @@
     "hook_event_name": "Notification",
     "message": "Claude is waiting for your input",
     "notification_type": "idle_prompt"
+  },
+  {
+    "session_id": "0d9a0101-6633-47c8-a19f-4ffad0b260e5",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/0d9a0101-6633-47c8-a19f-4ffad0b260e5.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "hook_event_name": "Notification",
+    "message": "Claude is waiting for your input",
+    "notification_type": "idle_prompt"
+  },
+  {
+    "session_id": "7270000a-6f4b-4e6d-bebb-8ffdbb130fb5",
+    "transcript_path": "/Users/llnormll/.claude/projects/-Users-llnormll-WorkSpace-ui-design/7270000a-6f4b-4e6d-bebb-8ffdbb130fb5.jsonl",
+    "cwd": "/Users/llnormll/WorkSpace/ui-design",
+    "hook_event_name": "Notification",
+    "message": "Claude is waiting for your input",
+    "notification_type": "idle_prompt"
   }
 ]
