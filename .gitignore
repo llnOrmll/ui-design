@@ -2,3 +2,6 @@ archive/
 .env
 .claude/
 docs/
+logs/
+interior/
+*.png
