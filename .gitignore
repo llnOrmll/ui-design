@@ -3,6 +3,5 @@ archive/
 .claude/
 docs/
 logs/
-interior/
 *.png
 images/
